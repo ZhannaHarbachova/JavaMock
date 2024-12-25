@@ -1,18 +1,28 @@
 package Mock;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 @RestController
 @RequestMapping(value = "app/v1")
 public class FirstController {
+    String bodyGet, bodyPost;
+
+    @PostConstruct
+    public void init() throws IOException {
+        Path pathGet = Path.of("src/main/resources/getAnswer.txt");
+        bodyGet = Files.readString(pathGet);
+
+        Path pathPost = Path.of("src/main/resources/postAnswer.txt");
+        bodyPost = Files.readString(pathPost);
+    }
 
     @GetMapping (value = "/getRequest")
     public ResponseEntity<String> getRequest(@RequestParam int id, @RequestParam String name) throws IOException {
@@ -36,12 +46,7 @@ public class FirstController {
         }
 
         String data;
-        try {
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("getAnswer.txt");
-            data = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).replace("{name}", name);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка чтения файла");
-        }
+        data = bodyGet.replace("{name}", name);
 
         return ResponseEntity.ok(data);
     }
@@ -57,16 +62,10 @@ public class FirstController {
         }
 
         String data;
-        try {
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("postAnswer.txt");
-            data = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .replace("{name}", name)
-                    .replace("{surname}", surname)
-                    .replace("{age}*2", String.valueOf(age * 2))
-                    .replace("{age}", String.valueOf(age));
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading file.");
-        }
+        data = bodyPost.replace("{name}", name)
+                .replace("{surname}", surname)
+                .replace("{age}*2", String.valueOf(age * 2))
+                .replace("{age}", String.valueOf(age));
 
         return ResponseEntity.ok(data);
     }
